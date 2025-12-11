@@ -7,11 +7,62 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum CommandStatus {
+  ALLOWED
+  BLOCKED
+  FAILED
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String?
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String? // not required as of now since we use API keys, hence optional
+  name     String?
+  role     Role    @default(MEMBER)
+  credits  Int     @default(0)
+
+  apiKeys ApiKey[]
+  logs    CommandLog[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ApiKey {
+  id        Int      @id @default(autoincrement())
+  keyHash   String   @unique
+  prefix    String // first few chars to identify key
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+}
+
+enum RuleAction {
+  AUTO_ACCEPT
+  AUTO_REJECT
+}
+
+model CommandRule {
+  id        Int        @id @default(autoincrement())
+  pattern   String     @unique // regex goes here
+  action    RuleAction @default(AUTO_ACCEPT)
+  cost      Int        @default(1)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CommandLog {
+  id        Int           @id @default(autoincrement())
+  command   String
+  status    CommandStatus
+  output    String? 
+  cost      Int 
+  user      User          @relation(fields: [userId], references: [id])
+  userId    Int
+  timestamp DateTime      @default(now())
 }

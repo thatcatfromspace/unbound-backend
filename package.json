@@ -1,5 +1,5 @@
 {
-  "name": "express-boilerplate",
+  "name": "unbound-command-gateway",
   "version": "1.0.0",
   "main": "dist/server.js",
   "license": "MIT",
@@ -18,10 +18,10 @@
     "helmet": "^8.1.0",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.3",
-    "morgan": "^1.10.1"
+    "morgan": "^1.10.1",
+    "@prisma/client": "5"
   },
   "devDependencies": {
-    "@prisma/client": "5",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
