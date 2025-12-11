@@ -44,30 +44,9 @@ export class RuleService {
 
   async findMatchingRule(command: string): Promise<CommandRule | null> {
     const rules = await prisma.commandRule.findMany();
-    const now = new Date();
-    const currentHash = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
+    
     for (const rule of rules) {
       if (new RegExp(rule.pattern).test(command)) {
-        
-        if (rule.startTime && rule.endTime) {
-            const start = rule.startTime;
-            const end = rule.endTime;
-            
-            let isWithinWindow = false;
-            if (start <= end) {
-                isWithinWindow = currentHash >= start && currentHash <= end;
-            } else {
-                // overnight window
-                isWithinWindow = currentHash >= start || currentHash <= end;
-            }
-
-            if (!isWithinWindow) {
-                // skip this rule
-                continue;
-            }
-        }
-
         return rule;
       }
     }

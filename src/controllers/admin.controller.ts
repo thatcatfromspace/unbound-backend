@@ -44,7 +44,7 @@ export class AdminController {
   // add or update rule
   static async updateRule(req: Request, res: Response) {
     try {
-      const { pattern, action, cost } = req.body;
+      const { pattern, action, cost, startTime, endTime } = req.body;
       if (!pattern || !action || cost === undefined) {
         res
           .status(400)
@@ -61,7 +61,7 @@ export class AdminController {
         res.status(400).json({ error: `Invalid regex pattern: ${e.message}` });
         return;
       }
-      const rule = await ruleService.addRule(pattern, action, cost);
+      const rule = await ruleService.addRule(pattern, action, cost, startTime, endTime);
       res.json({ message: "Rule updated", rule });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

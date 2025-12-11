@@ -30,6 +30,36 @@ export class CommandService {
       };
     }
 
+    // handle time based rules
+    if (rule.startTime && rule.endTime) {
+        const now = new Date();
+        const currentHash = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+        let isWithinWindow = false;
+        if (rule.startTime <= rule.endTime) {
+            isWithinWindow = currentHash >= rule.startTime && currentHash <= rule.endTime;
+        } else {
+            // overnight window
+            isWithinWindow = currentHash >= rule.startTime || currentHash <= rule.endTime;
+        }
+
+        if (!isWithinWindow) {
+            await this.logCommand(
+                user.id,
+                command,
+                CommandStatus.BLOCKED,
+                "Command blocked by time based rules.",
+                0
+            );
+            return {
+                success: false,
+                output: "Command blocked by time based rules.",
+                costDeducted: 0,
+                status: CommandStatus.BLOCKED
+            };
+        }
+    }
+
     // Handle REQUIRE_APPROVAL
     if (rule.action === RuleAction.REQUIRE_APPROVAL) {
         // Check for existing approved request
