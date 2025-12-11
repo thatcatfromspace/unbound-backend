@@ -40,6 +40,13 @@
     ```
     The application should now be running at `http://localhost:3000`.
 
+## Additional features implemented
+
+- Deployed frontend and backend
+- Time-based rules
+- Risky rules require admin approval
+- Conflicting rule checks
+
 ## Scripts
 
 - `yarn dev`: Run in development mode
