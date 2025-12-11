@@ -33,7 +33,15 @@ export class RuleService {
         return rule;
       }
     }
-    return null;
+    // if no match found, return default allow rule
+    return {
+      id: 0,
+      pattern: "*",
+      action: RuleAction.AUTO_ACCEPT,
+      cost: 1,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as CommandRule;
   }
 }
 
