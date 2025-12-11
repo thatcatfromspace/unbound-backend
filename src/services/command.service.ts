@@ -14,12 +14,12 @@ export class CommandService {
   async processCommand(user: User, command: string): Promise<CommandResult> {
     const rule = await ruleService.findMatchingRule(command);
 
-    if (!rule || rule.action !== RuleAction.AUTO_ACCEPT) {
+    if (!rule || rule.action === RuleAction.AUTO_REJECT) {
       await this.logCommand(
         user.id,
         command,
         CommandStatus.BLOCKED,
-        "No matching allow rule found",
+        "Command blocked by gateway rules.",
         0
       );
       return {
@@ -28,6 +28,49 @@ export class CommandService {
         costDeducted: 0,
         status: CommandStatus.BLOCKED
       };
+    }
+
+    // Handle REQUIRE_APPROVAL
+    if (rule.action === RuleAction.REQUIRE_APPROVAL) {
+        // Check for existing approved request
+        const approvedRequest = await prisma.approvalRequest.findFirst({
+            where: {
+                userId: user.id,
+                command: command,
+                status: 'APPROVED'
+            }
+        });
+
+        if (approvedRequest) {
+            await prisma.approvalRequest.delete({ where: { id: approvedRequest.id } });
+        } else {
+            // check if pending exists to avoid duplicates
+            const pendingRequest = await prisma.approvalRequest.findFirst({
+                where: {
+                    userId: user.id,
+                    command: command,
+                    status: 'PENDING'
+                }
+            });
+
+            if (!pendingRequest) {
+                await prisma.approvalRequest.create({
+                    data: {
+                        userId: user.id,
+                        command: command,
+                        status: 'PENDING'
+                    }
+                });
+            }
+
+            await this.logCommand(user.id, command, CommandStatus.BLOCKED, "Approval Required", 0);
+            return {
+                success: false,
+                output: "Command requires approval. Request submitted.",
+                costDeducted: 0,
+                status: CommandStatus.BLOCKED // blocked until approval
+            };
+        }
     }
 
     if (user.credits < rule.cost) {

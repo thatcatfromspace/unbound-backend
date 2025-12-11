@@ -6,13 +6,32 @@ export class RuleService {
   async addRule(
     pattern: string,
     action: RuleAction,
-    cost: number
+    cost: number,
+    startTime?: string,
+    endTime?: string
   ): Promise<CommandRule> {
+    // Check for conflicts
+    const conflict = await this.checkConflict(pattern);
+    if (conflict) {
+      throw new Error(`Rule conflict detected with existing pattern: ${conflict.pattern}`);
+    }
+
     return prisma.commandRule.upsert({
       where: { pattern },
-      update: { action, cost },
-      create: { pattern, action, cost }
+      update: { action, cost, startTime, endTime },
+      create: { pattern, action, cost, startTime, endTime }
     });
+  }
+
+  async checkConflict(newPattern: string): Promise<CommandRule | null> {
+    const rules = await prisma.commandRule.findMany();
+    for (const rule of rules) {
+      // Basic overlap detection: check if one pattern is a substring of the other
+      if (rule.pattern !== newPattern && (rule.pattern.includes(newPattern) || newPattern.includes(rule.pattern))) {
+        return rule;
+      }
+    }
+    return null;
   }
 
   async getAllRules(): Promise<CommandRule[]> {
@@ -23,24 +42,45 @@ export class RuleService {
     return prisma.commandRule.delete({ where: { id } });
   }
 
-  // explicitly stated that first rule match takes precedence
-  // TODO: use an in-memmory DB for bulk access?
   async findMatchingRule(command: string): Promise<CommandRule | null> {
     const rules = await prisma.commandRule.findMany();
+    const now = new Date();
+    const currentHash = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
     for (const rule of rules) {
       if (new RegExp(rule.pattern).test(command)) {
+        
+        if (rule.startTime && rule.endTime) {
+            const start = rule.startTime;
+            const end = rule.endTime;
+            
+            let isWithinWindow = false;
+            if (start <= end) {
+                isWithinWindow = currentHash >= start && currentHash <= end;
+            } else {
+                // overnight window
+                isWithinWindow = currentHash >= start || currentHash <= end;
+            }
+
+            if (!isWithinWindow) {
+                // skip this rule
+                continue;
+            }
+        }
+
         return rule;
       }
     }
-    // if no match found, return default allow rule
+    
     return {
       id: 0,
       pattern: "*",
       action: RuleAction.AUTO_ACCEPT,
       cost: 1,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      startTime: null,
+      endTime: null
     } as CommandRule;
   }
 }

@@ -12,4 +12,8 @@ router.post("/rules", AdminController.updateRule);
 router.get("/rules", AdminController.getRules);
 router.get("/logs", AdminController.getLogs);
 
+router.get("/approvals", AdminController.getPendingRequests);
+router.post("/approvals/:id/approve", AdminController.approveRequest);
+router.post("/approvals/:id/reject", AdminController.rejectRequest);
+
 export default router;

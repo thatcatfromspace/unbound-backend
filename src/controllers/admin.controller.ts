@@ -91,4 +91,46 @@ export class AdminController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  // get pending approval requests
+  static async getPendingRequests(req: Request, res: Response) {
+    try {
+        const requests = await prisma.approvalRequest.findMany({
+            where: { status: 'PENDING' },
+            include: { user: { select: { email: true } } },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(requests);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+  }
+
+  // approve a request
+  static async approveRequest(req: Request, res: Response) {
+      try {
+          const { id } = req.params;
+          await prisma.approvalRequest.update({
+              where: { id: Number(id) },
+              data: { status: 'APPROVED' }
+          });
+          res.json({ message: 'Request approved' });
+      } catch (error: any) {
+          res.status(500).json({ error: error.message });
+      }
+  }
+
+  // reject a request
+  static async rejectRequest(req: Request, res: Response) {
+      try {
+          const { id } = req.params;
+          await prisma.approvalRequest.update({
+              where: { id: Number(id) },
+              data: { status: 'REJECTED' }
+          });
+          res.json({ message: 'Request rejected' });
+      } catch (error: any) {
+          res.status(500).json({ error: error.message });
+      }
+  }
 }
